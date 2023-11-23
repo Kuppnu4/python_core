@@ -22,22 +22,6 @@ archives_dir = os.path.join(path, 'archives')
 unknown_files_dir = os.path.join(path, 'unknown_files')
 
 
-def create_new_directories(path):
-    
-    if not os.path.exists(images_dir):
-        os.makedirs(images_dir)
-    if not os.path.exists(videos_dir):
-        os.makedirs(videos_dir)
-    if not os.path.exists(docs_dir):
-        os.makedirs(docs_dir)
-    if not os.path.exists(music_dir):
-        os.makedirs(music_dir)
-    if not os.path.exists(archives_dir):
-        os.makedirs(archives_dir)
-    if not os.path.exists(unknown_files_dir):
-        os.makedirs(unknown_files_dir)
-        
-
 def sort(path):
     
     dir_path = Path(path).absolute()
@@ -80,7 +64,84 @@ def sort(path):
             unknown_extensions.add(norm_file.suffix)
 
     remove_empty_folders(path)
+    unpack_archives(archives_dir)
+    write_job_report(path)
+            
 
+def collect_all_files(path,files_list):
+   
+    for file in path.iterdir():
+        if file.is_file():
+            files_list.append(file)
+        else:
+            collect_all_files(file, files_list)    
+    return files_list
+
+
+def create_new_directories(path):
+    
+    if not os.path.exists(images_dir):
+        os.makedirs(images_dir)
+    if not os.path.exists(videos_dir):
+        os.makedirs(videos_dir)
+    if not os.path.exists(docs_dir):
+        os.makedirs(docs_dir)
+    if not os.path.exists(music_dir):
+        os.makedirs(music_dir)
+    if not os.path.exists(archives_dir):
+        os.makedirs(archives_dir)
+    if not os.path.exists(unknown_files_dir):
+        os.makedirs(unknown_files_dir)
+        
+
+def normalize(file):
+    
+    kirillic_translate = str.maketrans({
+        'а':'a', 'б':'b','в':'v', 'г':'g','д':'d', 'е':'ie','ё':'io',
+        'ж':'j','з':'z','и':'i','й':'y', 'к':'k', 'л':'l', 'м':'m',
+        'н':'n', 'о':'o','п':'p', 'р':'r','с':'s', 'т':'t','у':'u',
+        'ф':'f','х':'h','ц':'c','ч':'ch', 'ш':'sh','щ':'sh', 'ъ':'',
+        'ы':'y', 'ь':'','э':'e', 'ю':'iu','я':'ia',
+        'А':'A', 'Б':'B','В':'V', 'Г':'G','Д':'D', 'Е':'Ie','Ë':'Io',
+        'Ж':'J','З':'Z','И':'I','Й':'Y', 'К':'K', 'Л':'L', 'М':'M',
+        'Н':'N', 'О':'O','П':'P', 'Р':'R','С':'S', 'Т':'T','У':'U',
+        'Ф':'F','Х':'H','Ц':'C','Ч':'Ch', 'Ш':'Sh','Щ':'Sh', 'Ъ':'',
+        'Ы':'Y', 'Ь':'','Э':'E', 'Ю':'Iu','Я':'Ia'
+        })
+    
+    name, extension  = os.path.splitext(os.path.basename(file))
+    
+    file_name = name.translate(kirillic_translate)
+    file_name = re.compile(r'[^a-zA-Z0-9]').sub('_', file_name)
+    
+    return Path(file_name + extension)
+
+
+def move_file(orig_file, directory, norm_file):
+
+    new_path = os.path.join(directory, norm_file.name)
+    shutil.move(orig_file.absolute(), new_path)
+    known_extensions.add(norm_file.suffix)    
+            
+
+def remove_empty_folders(directory):
+    
+    regexp_ds = re.compile(r'\.(DS_Store)$')
+
+    for folder in Path(directory).iterdir():
+
+        folder_path = os.path.join(directory, folder)
+        if regexp_ds.search(folder_path):
+            os.remove(Path(folder_path))
+            continue
+        elif (images_dir == folder_path or videos_dir == folder_path or docs_dir == folder_path or music_dir == folder_path or archives_dir == folder_path or unknown_files_dir == folder_path):
+            continue
+        else:
+            shutil.rmtree(folder_path)
+
+
+def unpack_archives(archives_dir):
+    
     for a in Path(archives_dir).iterdir():
         
         new_folder_path = os.path.join(archives_dir, a.name.split('.')[0])
@@ -92,7 +153,9 @@ def sort(path):
             shutil.unpack_archive(a, new_folder_path)
         except Exception:
             continue
-            
+
+def write_job_report(path):
+    
     with open(os.path.join(path, 'known_extensions.txt'), 'w') as file:
         for e in known_extensions:
             file.write(f'{e}\n')
@@ -121,69 +184,9 @@ def sort(path):
         file.write(f'\nARCHIVES\n\n')
         for a in archives:
             file.write(f'{a}\n')
-            
-
-    
-def move_file(orig_file, directory, norm_file):
-
-    new_path = os.path.join(directory, norm_file.name)
-    shutil.move(orig_file.absolute(), new_path)
-    known_extensions.add(norm_file.suffix)
-
-
-def normalize(file):
-    kirillic_translate = str.maketrans({
-        'а':'a', 'б':'b','в':'v', 'г':'g','д':'d', 'е':'ie','ё':'io',
-        'ж':'j','з':'z','и':'i','й':'y', 'к':'k', 'л':'l', 'м':'m',
-        'н':'n', 'о':'o','п':'p', 'р':'r','с':'s', 'т':'t','у':'u',
-        'ф':'f','х':'h','ц':'c','ч':'ch', 'ш':'sh','щ':'sh', 'ъ':'',
-        'ы':'y', 'ь':'','э':'e', 'ю':'iu','я':'ia',
-        'А':'A', 'Б':'B','В':'V', 'Г':'G','Д':'D', 'Е':'Ie','Ë':'Io',
-        'Ж':'J','З':'Z','И':'I','Й':'Y', 'К':'K', 'Л':'L', 'М':'M',
-        'Н':'N', 'О':'O','П':'P', 'Р':'R','С':'S', 'Т':'T','У':'U',
-        'Ф':'F','Х':'H','Ц':'C','Ч':'Ch', 'Ш':'Sh','Щ':'Sh', 'Ъ':'',
-        'Ы':'Y', 'Ь':'','Э':'E', 'Ю':'Iu','Я':'Ia'
-        })
-    
-    name, extension  = os.path.splitext(os.path.basename(file))
-    
-    file_name = name.translate(kirillic_translate)
-    file_name = re.compile(r'[^a-zA-Z0-9]').sub('_', file_name)
-    
-    return Path(file_name + extension)
     
 
-def collect_all_files(path,files_list):
-   
-   
-    for file in path.iterdir():
-        
-        if file.is_file():
-            files_list.append(file)
-        else:
-            collect_all_files(file, files_list)
-                   
-    return files_list
 
-
-
-def remove_empty_folders(directory):
-    
-    regexp_ds = re.compile(r'\.(DS_Store)$')
-
-    for folder in Path(directory).iterdir():
-
-        folder_path = os.path.join(directory, folder)
-        
-        if regexp_ds.search(folder_path):
-            os.remove(Path(folder_path))
-            continue
-        
-        elif (images_dir == folder_path or videos_dir == folder_path or docs_dir == folder_path or music_dir == folder_path or archives_dir == folder_path or unknown_files_dir == folder_path):
-            continue
-
-        else:
-            shutil.rmtree(folder_path)
 
 
 
