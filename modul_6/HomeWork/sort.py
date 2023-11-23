@@ -6,8 +6,6 @@ import shutil
 
 path = sys.argv[1]
 
-ds_store_path = '.DS_Store'
-
 images = []
 videos = []
 documents = []
@@ -16,15 +14,10 @@ archives = []
 known_extensions = set()
 unknown_extensions = set()
 
-'''
-def remove_DS_Store(path):
-    os.remove(path)'''
- 
-
 images_dir = os.path.join(path, 'images')
-videos_dir = os.path.join(path, 'videos')
+videos_dir = os.path.join(path, 'video')
 docs_dir = os.path.join(path, 'documents')
-music_dir = os.path.join(path, 'music')
+music_dir = os.path.join(path, 'audio')
 archives_dir = os.path.join(path, 'archives')
 unknown_files_dir = os.path.join(path, 'unknown_files')
 
@@ -87,9 +80,13 @@ def sort(path):
                 move_file(file, unknown_files_dir, norm_file)
                 unknown_extensions.add(norm_file.suffix)
 
+    remove_empty_folders(path)
+
     for a in Path(archives_dir).iterdir():
-        if regexp_archives.search(a.name):
-            shutil.unpack_archive(a,archives_dir)
+        try:
+            shutil.unpack_archive(a, archives_dir)
+        except Exception:
+            continue
             
     with open(os.path.join(path, 'known_extensions.txt'), 'w') as file:
         for e in known_extensions:
@@ -98,9 +95,6 @@ def sort(path):
     with open(os.path.join(path, 'unknown_extensions.txt'), 'w') as file:
         for e in unknown_extensions:
             file.write(f'{e}\n')
-
-    remove_DS_files(path)
-    remove_empty_folders(path)
 
     
 def move_file(orig_file, directory, norm_file):
@@ -147,68 +141,23 @@ def collect_all_files(path,files_list):
 
 
 def remove_empty_folders(directory):
-    print('\n\ndirectory >>>>>>>',directory, '\n\n')
+    
     regexp_ds = re.compile(r'\.(DS_Store)$')
 
     for folder in Path(directory).iterdir():
+
         folder_path = os.path.join(directory, folder)
         
-        print(folder_path, '>>>>>>', Path(folder_path).absolute().is_dir())
-        
         if regexp_ds.search(folder_path):
-            print('\n\n\n<<<<<GOT DS>>>>>>\n\n\n')
             os.remove(Path(folder_path))
             continue
-
-        elif os.path.isfile(folder_path):
-            continue
         
-        elif len(os.listdir(folder_path)) == 0:
-            print('\n LEN folder_path = 0 \n')
-            os.remove(folder_path)
+        elif (images_dir == folder_path or videos_dir == folder_path or docs_dir == folder_path or music_dir == folder_path or archives_dir == folder_path or unknown_files_dir == folder_path):
+            continue
 
         else:
-            print('\n LEN folder_path > 0 \n')
-            remove_empty_folders(folder_path)
+            shutil.rmtree(folder_path)
 
-        
-        
-        
-
-
-            
-       
-
-        
-
-        
-            
-            
-
-    
-    '''
-    for root, dirs, files in os.walk(directory, topdown = False):
-        
-        print(root, '>>>>>', dirs, '>>>>>', files)
-        
-        for d in dirs:
-            
-            #print(d)
-            folder_path = os.path.join(root, d)
-            print('FOLDER PATH >>>>>>', folder_path)
-
-            content = os.listdir(folder_path)
-            #print(content)
-            for c in content:
-                print('PATH C >>>>>>>', Path(c).absolute())
-                if c == ds_store_path:
-                    os.remove(Path(c))
-            
-            if not any(os.listdir(folder_path)):
-                print("empty")
-                os.rmdir(folder_path)'''
-
-    
 
 
 if __name__ == '__main__':
