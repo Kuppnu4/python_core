@@ -55,36 +55,41 @@ def sort(path):
     for file in files_list:
         norm_file = normalize(file)
         
-        if regexp_images.search(norm_file.name):
+        if regexp_images.search(norm_file.name.lower()):
             move_file(file, images_dir, norm_file)
             images.append(norm_file)
             
-        elif regexp_videos.search(norm_file.name):
+        elif regexp_videos.search(norm_file.name.lower()):
             move_file(file, videos_dir, norm_file)
             videos.append(norm_file)
             
-        elif regexp_docs.search(norm_file.name):
+        elif regexp_docs.search(norm_file.name.lower()):
             move_file(file, docs_dir, norm_file)
             documents.append(norm_file)
             
-        elif regexp_music.search(norm_file.name):
+        elif regexp_music.search(norm_file.name.lower()):
             move_file(file, music_dir, norm_file)
             music.append(norm_file)
             
-        elif regexp_archives.search(norm_file.name):
+        elif regexp_archives.search(norm_file.name.lower()):
             move_file(file, archives_dir, norm_file)
             archives.append(norm_file)
             
         else:
-            if len(norm_file.suffix) > 0:
-                move_file(file, unknown_files_dir, norm_file)
-                unknown_extensions.add(norm_file.suffix)
+            move_file(file, unknown_files_dir, norm_file)
+            unknown_extensions.add(norm_file.suffix)
 
     remove_empty_folders(path)
 
     for a in Path(archives_dir).iterdir():
+        
+        new_folder_path = os.path.join(archives_dir, a.name.split('.')[0])
+        '''create new path for new directories for unpacking the archives
+        '''
+        if not os.path.exists(new_folder_path):
+            os.makedirs(new_folder_path)
         try:
-            shutil.unpack_archive(a, archives_dir)
+            shutil.unpack_archive(a, new_folder_path)
         except Exception:
             continue
             
@@ -95,6 +100,28 @@ def sort(path):
     with open(os.path.join(path, 'unknown_extensions.txt'), 'w') as file:
         for e in unknown_extensions:
             file.write(f'{e}\n')
+
+    with open(os.path.join(path, 'All_prcessed_files.txt'), 'w') as file:
+        file.write(f'IMAGES\n\n')
+        for i in images:
+            file.write(f'{i}\n')
+            
+        file.write(f'\nVIDEO\n\n')
+        for v in videos:
+            file.write(f'{v}\n')
+
+        file.write(f'\nDOCUMENTS\n\n')
+        for d in documents:
+            file.write(f'{d}\n')
+
+        file.write(f'\nAUDIO\n\n')
+        for m in music:
+            file.write(f'{m}\n')
+
+        file.write(f'\nARCHIVES\n\n')
+        for a in archives:
+            file.write(f'{a}\n')
+            
 
     
 def move_file(orig_file, directory, norm_file):
