@@ -1,0 +1,15 @@
+0: John courier
+1: Pipe cook
+2: Jordan huer
+3: Vovan courier
+4: Sancho cook
+5: Roman prog
+6: Koldun frog
+7: Moldun courier0: John courier
+1: Pipe cook
+2: Jordan huer
+3: Vovan courier
+4: Sancho cook
+5: Roman prog
+6: Koldun frog
+7: Moldun courier
